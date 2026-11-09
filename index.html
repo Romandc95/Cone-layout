@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cone Layout</title>
+<meta name="apple-mobile-web-app-title" content="Cone Layout">
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2346b8">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+
+/* Layout: single shop-sheet column — inputs, key numbers, full pattern drawing, then the station table you lay out from */
+:root{
+  --bg:#e9eef0; --surface:#f8fafb; --ink:#172128; --muted:#58666e; --line:#c9d3d8;
+  --accent:#2346b8; --accent-soft:#dbe3fb; --warn:#a4570a; --warn-soft:#fbecd9; --ok:#1d7a4c;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161a; --surface:#182026; --ink:#e3eaee; --muted:#93a2aa; --line:#2b373e;
+  --accent:#86a2ff; --accent-soft:#1f2a4d; --warn:#f0ae5d; --warn-soft:#3a2a15; --ok:#5fd19a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161a; --surface:#182026; --ink:#e3eaee; --muted:#93a2aa; --line:#2b373e;
+  --accent:#86a2ff; --accent-soft:#1f2a4d; --warn:#f0ae5d; --warn-soft:#3a2a15; --ok:#5fd19a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,6vw,44px);line-height:1;margin:0;letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+h2{font-family:var(--display);font-weight:600;font-size:22px;text-transform:uppercase;letter-spacing:.04em;margin:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.inputs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px 14px}
+@media (max-width:640px){.inputs{grid-template-columns:1fr 1fr}}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select{font:500 18px var(--mono);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px 10px;width:100%;min-width:0}
+.field select{font-size:15px;font-family:var(--body)}
+.field input:focus,.field select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.hint{font-size:12px;color:var(--muted)}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--bg)}
+.seg button{flex:1;font:600 14px var(--body);border:0;background:transparent;color:var(--muted);padding:10px 4px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.span2{grid-column:span 2}
+.profile{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center}
+.profile svg{width:120px;height:auto}
+.profile p{margin:0;font-size:14px;color:var(--muted)}
+.err{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+@media (max-width:640px){.tiles{grid-template-columns:1fr 1fr}}
+.tile{background:var(--surface);padding:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .v{font:600 clamp(20px,4.6vw,28px) var(--mono);font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.tile .d{font:12px var(--mono);color:var(--muted)}
+.tile.key .v{color:var(--accent)}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:0 24px}
+@media (max-width:640px){.kv{grid-template-columns:1fr}}
+.kv div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);min-width:0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{font:500 15px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.draw{overflow-x:auto;background:var(--bg);border-radius:8px;border:1px solid var(--line)}
+.draw svg{display:block;width:100%;min-width:320px;height:auto}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:600 14px var(--body);padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:right;padding:8px 10px;border-bottom:2px solid var(--ink);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+td{font:500 15px var(--mono);padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+td.up{color:var(--accent)}
+td .side{color:var(--muted);font-size:12px}
+tr.corner td{background:var(--accent-soft)}
+ol.steps{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:72ch}
+ol.steps b{font-family:var(--mono);font-weight:600}
+.note{font-size:14px;color:var(--muted);max-width:72ch;margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.btn{font:600 14px var(--body);padding:9px 14px;border-radius:7px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.toast{font-size:13px;color:var(--ok);font-weight:600}
+.warn{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 12px;font-size:14px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Cone Layout</h1>
+  <p>Concentric cone and reducer flat patterns from three numbers. Lay it out with a tape and square off a straight baseline. No 50-inch trammel, no guess and check.</p>
+</header>
+
+<section class="panel" aria-labelledby="h-in">
+  <div class="profile">
+    <svg viewBox="0 0 120 110" aria-hidden="true">
+      <path d="M14 14 L106 14 L88 96 L32 96 Z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+      <line x1="60" y1="6" x2="60" y2="104" stroke="var(--muted)" stroke-dasharray="4 3"/>
+      <text x="60" y="10" text-anchor="middle" font-size="10" fill="var(--ink)" font-family="IBM Plex Mono,monospace">LARGE Ø</text>
+      <text x="60" y="108" text-anchor="middle" font-size="10" fill="var(--ink)" font-family="IBM Plex Mono,monospace">SMALL Ø</text>
+      <text x="4" y="58" font-size="10" fill="var(--ink)" font-family="IBM Plex Mono,monospace" transform="rotate(-90 8 58)">TAKEOFF</text>
+    </svg>
+    <p>Enter both diameters and the length along the centerline. Thickness matters on the layout: the pattern is laid out on the mean diameter so it closes after rolling. Accepts <b>12</b>, <b>12.5</b>, <b>12 1/2</b> or <b>12-1/2</b>.</p>
+  </div>
+  <div class="inputs">
+    <div class="field"><label for="d1">Large Ø (in)</label><input id="d1" inputmode="decimal" value="12"></div>
+    <div class="field"><label for="d2">Small Ø (in)</label><input id="d2" inputmode="decimal" value="9"></div>
+    <div class="field"><label for="h">Takeoff (in)</label><input id="h" inputmode="decimal" value="13"></div>
+    <div class="field span2"><span class="lbl" id="ref-l">Diameters measured</span>
+      <div class="seg" role="group" aria-labelledby="ref-l" id="ref">
+        <button type="button" data-v="od" aria-pressed="true">Outside</button>
+        <button type="button" data-v="mean" aria-pressed="false">Centerline</button>
+        <button type="button" data-v="id" aria-pressed="false">Inside</button>
+      </div></div>
+    <div class="field"><label for="ga">Material</label>
+      <select id="ga">
+        <option value="0.0313">22 ga SS (.031)</option>
+        <option value="0.0375">20 ga SS (.038)</option>
+        <option value="0.05" selected>18 ga SS (.050)</option>
+        <option value="0.0625">16 ga SS (.063)</option>
+        <option value="0.078">14 ga SS (.078)</option>
+        <option value="0.109">12 ga SS (.109)</option>
+        <option value="0.125">11 ga / 1/8 (.125)</option>
+        <option value="0.1875">3/16 plate</option>
+        <option value="0.25">1/4 plate</option>
+        <option value="custom">Custom…</option>
+      </select></div>
+    <div class="field" id="tcust" hidden><label for="t">Thickness (in)</label><input id="t" inputmode="decimal" value="0.05"></div>
+    <div class="field"><label for="n">Pieces</label>
+      <select id="n"><option value="1">1 (one seam)</option><option value="2">2 halves</option><option value="3">3 pieces</option><option value="4">4 quarters</option></select></div>
+    <div class="field"><label for="lap">Seam lap (in)</label><input id="lap" inputmode="decimal" value="0"></div>
+    <div class="field"><label for="sp">Station spacing (in)</label><input id="sp" inputmode="decimal" value="2"></div>
+    <div class="field"><label for="pr">Round to</label>
+      <select id="pr"><option value="16">1/16"</option><option value="32">1/32"</option><option value="0">Decimal</option></select></div>
+  </div>
+  <div id="err" class="err" hidden></div>
+</section>
+
+<div id="out" class="wrap" style="gap:20px">
+<section class="tiles" aria-label="Key layout numbers">
+  <div class="tile key"><span class="lbl">Large radius</span><span class="v" id="tL">–</span><span class="d" id="tLd"></span></div>
+  <div class="tile key"><span class="lbl">Small radius</span><span class="v" id="tl">–</span><span class="d" id="tld"></span></div>
+  <div class="tile"><span class="lbl">Arc angle</span><span class="v" id="tA">–</span><span class="d" id="tAd"></span></div>
+  <div class="tile"><span class="lbl">Side (slant)</span><span class="v" id="tS">–</span><span class="d" id="tSd"></span></div>
+</section>
+
+<section class="panel" aria-labelledby="h-pat">
+  <div class="row"><h2 id="h-pat">Pattern <span id="pcs" style="color:var(--muted)"></span></h2>
+    <div class="row" style="gap:10px"><span class="toast" id="toast" aria-live="polite"></span><button class="btn ghost" id="copy" type="button">Copy cut sheet</button></div></div>
+  <div id="warn" class="warn" hidden></div>
+  <div class="draw" id="draw"></div>
+  <div class="kv" id="kv"></div>
+</section>
+
+<section class="panel" aria-labelledby="h-lay">
+  <div class="row"><h2 id="h-lay">Layout method</h2>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-off" aria-selected="true" type="button">Baseline offsets</button>
+    <button role="tab" id="tab-tram" aria-selected="false" type="button">Trammel</button>
+  </div></div>
+  <div id="m-off">
+    <ol class="steps" id="st-off"></ol>
+    <div class="tablewrap" style="margin-top:14px"><table id="tbl"></table></div>
+    <p class="note" style="margin-top:10px">Every station is measured both ways from the centerline. "Up" goes to the large-end arc, "down" goes to the small-end arc. Past the small-end corner the bottom edge is the straight side, shown in grey for checking.</p>
+  </div>
+  <div id="m-tram" hidden><ol class="steps" id="st-tram"></ol></div>
+</section>
+
+<p class="note">Layout is figured on the mean (centerline) diameter: outside Ø minus one thickness, or inside Ø plus one thickness. That's what makes thin-gauge stainless close up without a gap or overlap after rolling. Seam lap is added to one straight edge of each piece.</p>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const state={ref:'od'};
+function parseLen(s){s=String(s).trim().replace(/["”]/g,'');if(!s)return NaN;let m;
+  if(m=s.match(/^(\d+(?:\.\d*)?|\.\d+)$/))return parseFloat(m[1]);
+  if(m=s.match(/^(\d+)[\s-]+(\d+)\/(\d+)$/))return +m[1]+ +m[2]/+m[3];
+  if(m=s.match(/^(\d+)\/(\d+)$/))return +m[1]/+m[2];return NaN}
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+function fmt(v,unit=true){const p=+$('pr').value;const u=unit?'"':'';
+  if(!isFinite(v))return '–';
+  if(!p)return v.toFixed(3)+u;
+  const neg=v<0;let n=Math.round(Math.abs(v)*p);const w=Math.floor(n/p);let r=n%p;let s='';
+  if(r){const g=gcd(r,p);s=(r/g)+'/'+(p/g)}
+  let out=w&&s?w+' '+s:(w?String(w):(s||'0'));return (neg&&out!=='0'?'−':'')+out+u}
+const dec=v=>v.toFixed(3)+'"';
+
+function solve(){
+  const D1=parseLen($('d1').value),D2=parseLen($('d2').value),H=parseLen($('h').value);
+  const t=$('ga').value==='custom'?parseLen($('t').value):+$('ga').value;
+  const n=+$('n').value,lap=parseLen($('lap').value)||0,sp=parseLen($('sp').value);
+  if(![D1,D2,H,t].every(isFinite))return{err:'Check the inputs. Use numbers like 12, 12.5 or 12 1/2.'};
+  if(D1<=0||H<=0)return{err:'Diameters and takeoff need to be greater than zero.'};
+  const adj=state.ref==='od'?-t:state.ref==='id'?t:0;
+  const big=Math.max(D1,D2),small=Math.min(D1,D2);
+  const d1=big+adj,d2=Math.max(small+adj,0);
+  if(d1<=0)return{err:'Thickness is larger than the diameter.'};
+  const R1=d1/2,R2=d2/2,dR=R1-R2;
+  const r={D1:big,D2:small,H,t,n,lap,sp:isFinite(sp)&&sp>0?sp:2,d1,d2,R1,R2};
+  if(dR<1e-6){r.cyl=true;r.W=Math.PI*d1/n;return r}
+  r.S=Math.hypot(H,dR);r.L=r.S*R1/dR;r.l=r.L-r.S;
+  r.theta=360*dR/r.S;r.thetaP=r.theta/n;
+  const half=r.thetaP*Math.PI/360;r.half=half;
+  r.Lc=r.L*Math.cos(half);
+  r.Ls=r.L*Math.sin(half);r.ls=r.l*Math.sin(half);
+  r.chordL=2*r.Ls;r.chordS=2*r.ls;
+  r.riseL=r.L-r.Lc;r.riseS=r.l-r.l*Math.cos(half);
+  r.ysc=r.l*Math.cos(half)-r.Lc; // small corner y (pattern coords, baseline=0)
+  r.blankH=r.L-Math.min(r.l*Math.cos(half),r.Lc);
+  r.diag=Math.sqrt(r.L*r.L+r.l*r.l-2*r.L*r.l*Math.cos(r.thetaP*Math.PI/180));
+  r.arcL=Math.PI*d1/n;r.arcS=Math.PI*d2/n;
+  r.taper=Math.atan(dR/H)*180/Math.PI;
+  r.minN=Math.ceil(r.theta/150);
+  // stations
+  const st=[];const xs=[];for(let x=0;x<r.Ls-1e-6;x+=r.sp)xs.push(x);
+  xs.push(r.Ls);if(r.ls>1e-6&&!xs.some(x=>Math.abs(x-r.ls)<1e-4))xs.push(r.ls);xs.sort((a,b)=>a-b);
+  xs.forEach((x,i)=>{const up=Math.sqrt(Math.max(r.L*r.L-x*x,0))-r.Lc;let dn,onSide=false;
+    if(x<=r.ls+1e-6)dn=-(Math.sqrt(Math.max(r.l*r.l-x*x,0))-r.Lc);
+    else{onSide=true;dn=-(r.ysc*(r.Ls-x)/(r.Ls-r.ls))}
+    st.push({x,up,dn,onSide,smallCorner:Math.abs(x-r.ls)<1e-4,largeCorner:Math.abs(x-r.Ls)<1e-4})});
+  r.st=st;return r}
+
+function drawSVG(r){
+  const W=520,pad=34;
+  if(r.cyl){const w=r.W+r.lap,h=r.H;const k=(W-2*pad)/Math.max(w,h*1.4);const vw=W,vh=h*k+2*pad;
+    return `<svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="Rectangular cylinder pattern">
+    <rect x="${pad}" y="${pad}" width="${r.W*k}" height="${h*k}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+    ${r.lap?`<rect x="${pad+r.W*k}" y="${pad}" width="${r.lap*k}" height="${h*k}" fill="none" stroke="var(--muted)" stroke-dasharray="5 4"/>`:''}
+    <text x="${pad+r.W*k/2}" y="${pad-10}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="IBM Plex Mono,monospace">${fmt(r.W)}</text>
+    <text x="${pad-8}" y="${pad+h*k/2}" text-anchor="end" font-size="13" fill="var(--ink)" font-family="IBM Plex Mono,monospace">${fmt(h)}</text></svg>`}
+  const lapW=r.lap;const minY=r.ysc-0.0, maxY=r.riseL;
+  const wIn=r.chordL+lapW*1.2, hIn=maxY-Math.min(minY,0);
+  const k=(W-2*pad)/wIn;const vh=hIn*k+2*pad+14;
+  const cx=pad+(r.Ls)*k, by=pad+maxY*k; // baseline screen y
+  const P=(x,y)=>[cx+x*k,by-y*k];
+  const [lx,ly]=P(-r.Ls,0),[rx,ry]=P(r.Ls,0),[sxr,syr]=P(r.ls,r.ysc),[sxl,syl]=P(-r.ls,r.ysc);
+  const lf=r.thetaP>180?1:0;
+  let d=`M${lx} ${ly} A${r.L*k} ${r.L*k} 0 ${lf} 1 ${rx} ${ry} L${sxr} ${syr}`;
+  d+=r.l>1e-6?` A${r.l*k} ${r.l*k} 0 ${lf} 0 ${sxl} ${syl}`:'';d+=' Z';
+  let g='';
+  // lap strip along right side
+  if(lapW>0){const ux=(sxr-rx),uy=(syr-ry),len=Math.hypot(ux,uy);const nx=-uy/len*lapW*k*-1,ny=ux/len*lapW*k*-1;
+    g+=`<path d="M${rx} ${ry} L${rx+nx} ${ry+ny} L${sxr+nx} ${syr+ny} L${sxr} ${syr}" fill="none" stroke="var(--muted)" stroke-dasharray="5 4"/>`}
+  // stations
+  const showEvery=r.st.length>9?2:1;
+  r.st.forEach((s,i)=>{[1,-1].forEach(sg=>{if(s.x===0&&sg<0)return;const [x1,y1]=P(sg*s.x,s.up),[x2,y2]=P(sg*s.x,-s.dn);
+    g+=`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="0.8" stroke-dasharray="2 3"/>`;
+    g+=`<circle cx="${x1}" cy="${y1}" r="2.6" fill="var(--accent)"/><circle cx="${x2}" cy="${y2}" r="2.6" fill="var(--ink)"/>`;
+    if(sg>0&&(i%showEvery===0||s.largeCorner))g+=`<text x="${x1}" y="${y1-7}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${i}</text>`})});
+  const fs='font-family="IBM Plex Mono,monospace"';
+  return `<svg viewBox="0 0 ${W} ${vh}" role="img" aria-label="Flat pattern of one reducer piece with layout stations">
+  <path d="${d}" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round"/>
+  ${g}
+  <line x1="${lx-10}" y1="${by}" x2="${rx+10}" y2="${by}" stroke="var(--ink)" stroke-width="1.2"/>
+  <line x1="${cx}" y1="${pad-6}" x2="${cx}" y2="${Math.max(by,syl)+10}" stroke="var(--ink)" stroke-width="0.8" stroke-dasharray="8 3 2 3"/>
+  <text x="${rx+4}" y="${by-4}" font-size="11" fill="var(--ink)" ${fs} text-anchor="end">BASELINE ${fmt(r.chordL)}</text>
+  <text x="${cx}" y="${vh-6}" font-size="11" fill="var(--muted)" ${fs} text-anchor="middle">small-end chord ${fmt(r.chordS)}</text>
+  <text x="${cx+6}" y="${pad-10}" font-size="11" fill="var(--muted)" ${fs}>CL</text>
+  </svg>`}
+
+let last=null;
+function render(){
+  const r=solve();last=r;
+  $('err').hidden=!r.err;$('out').hidden=!!r.err;if(r.err){$('err').textContent=r.err;return}
+  $('pcs').textContent=r.n>1?`· 1 of ${r.n} identical`:'';
+  const kv=(a)=>a.map(([k,v])=>`<div><span>${k}</span><span>${v}</span></div>`).join('');
+  if(r.cyl){
+    $('tL').textContent='∞';$('tLd').textContent='straight cylinder';$('tl').textContent='–';$('tld').textContent='';
+    $('tA').textContent='0°';$('tAd').textContent='';$('tS').textContent=fmt(r.H);$('tSd').textContent=dec(r.H);
+    $('warn').hidden=true;$('draw').innerHTML=drawSVG(r);
+    $('kv').innerHTML=kv([['Mean Ø',fmt(r.d1)],['Stretchout per piece',fmt(r.W)],['Height',fmt(r.H)],['Blank incl. lap',fmt(r.W+r.lap)+' × '+fmt(r.H)]]);
+    $('st-off').innerHTML=`<li>Both diameters match, so this is a straight cylinder. Cut a rectangle <b>${fmt(r.W)}</b> wide by <b>${fmt(r.H)}</b> tall${r.lap?`, plus <b>${fmt(r.lap)}</b> lap on one edge`:''}.</li><li>Check both diagonals are equal: <b>${fmt(Math.hypot(r.W,r.H))}</b>.</li>`;
+    $('tbl').innerHTML='';$('st-tram').innerHTML='<li>No trammel needed for a straight cylinder.</li>';return}
+  $('tL').textContent=fmt(r.L);$('tLd').textContent=dec(r.L);
+  $('tl').textContent=fmt(r.l);$('tld').textContent=dec(r.l);
+  $('tA').textContent=r.thetaP.toFixed(2)+'°';$('tAd').textContent=r.n>1?`${r.theta.toFixed(2)}° total`:`taper ${r.taper.toFixed(1)}° per side`;
+  $('tS').textContent=fmt(r.S);$('tSd').textContent=dec(r.S);
+  const w=$('warn');
+  if(r.thetaP>180){w.hidden=false;w.innerHTML=`At ${r.thetaP.toFixed(0)}° one piece wraps past half a circle and the baseline method won't work. Use at least <b>${r.minN}</b> pieces.`}
+  else if(r.thetaP>150){w.hidden=false;w.textContent=`A ${r.thetaP.toFixed(0)}° piece is a wide sweep. Two or more pieces will be easier to lay out and form.`}
+  else w.hidden=true;
+  $('draw').innerHTML=drawSVG(r);
+  $('kv').innerHTML=kv([
+    ['Mean Ø large / small',fmt(r.d1)+' / '+fmt(r.d2)],
+    ['Blank size (W × H)',fmt(r.chordL+r.lap)+' × '+fmt(r.blankH)],
+    ['Large-end chord',fmt(r.chordL)],['Small-end chord',fmt(r.chordS)],
+    ['Large-arc rise',fmt(r.riseL)],['Small-arc rise',fmt(r.riseS)],
+    ['Arc length large end',fmt(r.arcL)],['Arc length small end',fmt(r.arcS)],
+    ['Diagonal check',fmt(r.diag)],['Small corners from CL',fmt(r.ls)+' / '+fmt(-r.ysc)+' down']]);
+  $('st-off').innerHTML=`
+   <li>Snap a straight baseline <b>${fmt(r.chordL)}</b> long. Mark its center and square a centerline up and down through it.</li>
+   <li>Mark the stations below along the baseline, each one <b>both sides</b> of center.</li>
+   <li>At each station, square up the <span style="color:var(--accent);font-weight:600">up</span> dimension and down the <b>down</b> dimension. Ends of the baseline are the large-end corners (offset 0).</li>
+   <li>Bend a thin bar or batten through the up marks for the large-end arc, and through the down marks out to the small-end corners for the small-end arc.</li>
+   <li>Snap the two side lines from each large-end corner to its small-end corner. Each should read <b>${fmt(r.S)}</b>.</li>
+   <li>Check: corner-to-opposite-corner diagonals both read <b>${fmt(r.diag)}</b>. Flex tape along each arc reads <b>${fmt(r.arcL)}</b> and <b>${fmt(r.arcS)}</b>.</li>
+   ${r.lap?`<li>Add <b>${fmt(r.lap)}</b> seam lap parallel to one side line.</li>`:''}`;
+  let rows=`<thead><tr><th>Stn</th><th>From CL ↔</th><th>Up to large arc</th><th>Down to small arc</th></tr></thead><tbody>`;
+  r.st.forEach((s,i)=>{const cls=(s.smallCorner||s.largeCorner)?' class="corner"':'';
+    const tag=s.largeCorner?' large corner':s.smallCorner?' small corner':'';
+    const dn=s.dn<0?'↑ '+fmt(-s.dn):fmt(s.dn);
+    rows+=`<tr${cls}><td>${i}<span class="side">${tag}</span></td><td>${fmt(s.x)}</td><td class="up">${fmt(s.up)}</td><td>${s.onSide?`<span class="side">side </span>`:''}${dn}</td></tr>`});
+  $('tbl').innerHTML=rows+'</tbody>';
+  $('st-tram').innerHTML=`
+   <li>Strike a center point. Swing an arc at <b>${fmt(r.L)}</b> (large end) and another at <b>${fmt(r.l)}</b> (small end).</li>
+   <li>Snap a radial line from center through both arcs.</li>
+   <li>From where that line crosses the large arc, measure a straight chord of <b>${fmt(r.chordL)}</b> across to the large arc and mark it.</li>
+   <li>Snap the second radial line from center through that mark. The chord across the small arc between the two lines should read <b>${fmt(r.chordS)}</b>.</li>
+   <li>Check diagonals: <b>${fmt(r.diag)}</b> both ways. Arc angle is <b>${r.thetaP.toFixed(2)}°</b>.</li>
+   ${r.n>1?`<li>All ${r.n} pieces are identical. Lay out one, cut it, and use it as the template for the rest.</li>`:''}
+   ${r.lap?`<li>Add <b>${fmt(r.lap)}</b> lap on one side line.</li>`:''}`;
+}
+
+function cutSheet(){const r=last;if(!r||r.err)return'';
+  if(r.cyl)return`CYLINDER ${fmt(r.D1)} x ${fmt(r.H)}\nStretchout ${fmt(r.W)} x ${fmt(r.H)} (${r.n} pc)`;
+  let s=`REDUCER ${fmt(r.D1)} x ${fmt(r.D2)} x ${fmt(r.H)} takeoff, t=${r.t}", ${state.ref.toUpperCase()}\n`+
+   `${r.n} pc @ ${r.thetaP.toFixed(2)} deg\nRadius large ${fmt(r.L)}  small ${fmt(r.l)}\nSide ${fmt(r.S)}  Diag ${fmt(r.diag)}\n`+
+   `Baseline ${fmt(r.chordL)}  small chord ${fmt(r.chordS)}\nBlank ${fmt(r.chordL+r.lap)} x ${fmt(r.blankH)}\nSTN  FROM-CL  UP  DOWN\n`;
+  r.st.forEach((x,i)=>s+=`${i}  ${fmt(x.x)}  ${fmt(x.up)}  ${x.dn<0?'^'+fmt(-x.dn):fmt(x.dn)}${x.onSide?' (side)':''}\n`);return s}
+
+$('copy').onclick=()=>{const txt=cutSheet();const done=m=>{$('toast').textContent=m;setTimeout(()=>$('toast').textContent='',2500)};
+  try{navigator.clipboard.writeText(txt).then(()=>done('Copied'),()=>done('Copy blocked here'))}catch(e){done('Copy blocked here')}};
+$('ref').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;state.ref=b.dataset.v;
+  [...$('ref').children].forEach(x=>x.setAttribute('aria-pressed',x===b));save();render()});
+$('ga').addEventListener('change',()=>{$('tcust').hidden=$('ga').value!=='custom'});
+['tab-off','tab-tram'].forEach(id=>$(id).onclick=()=>{const off=id==='tab-off';$('tab-off').setAttribute('aria-selected',off);$('tab-tram').setAttribute('aria-selected',!off);$('m-off').hidden=!off;$('m-tram').hidden=off});
+const ids=['d1','d2','h','ga','t','n','lap','sp','pr'];
+function save(){try{const o={ref:state.ref};ids.forEach(i=>o[i]=$(i).value);localStorage.setItem('rl',JSON.stringify(o))}catch(e){}}
+try{const o=JSON.parse(localStorage.getItem('rl')||'null');if(o){ids.forEach(i=>{if(o[i]!=null)$(i).value=o[i]});if(o.ref){state.ref=o.ref;[...$('ref').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===o.ref))}}}catch(e){}
+$('tcust').hidden=$('ga').value!=='custom';
+ids.forEach(i=>$(i).addEventListener('input',()=>{save();render()}));
+render();
+</script>
+</body>
+</html>
